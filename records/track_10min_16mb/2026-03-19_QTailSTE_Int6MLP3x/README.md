@@ -14,6 +14,7 @@ Candidate line based on public PR `#114`. Score is still pending; this folder is
 
 - `QTAIL_STE=1`: enables tail fake-quant.
 - `QTAIL_START_FRAC=0.82`: activates in the last ~18% of the allowed train wallclock, or last ~18% of steps if no wallclock cap is set.
+- `FINAL_SLIDING_EVAL=1`: keep the expensive final sliding eval. Set it to `0` for cheap `1xH100` smoke runs.
 - `FP16_TAIL_K_LAYERS=2`: matches `#114` default.
 - `FP16_TAIL_V_LAYERS=0`
 - `FP16_TAIL_O_LAYERS=0`

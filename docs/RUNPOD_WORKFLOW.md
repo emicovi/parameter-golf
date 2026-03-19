@@ -87,6 +87,6 @@ bash scripts/run_pricebook_eval.sh
 ## Notes
 
 - `--train-shards 1` reduces download size and iteration cost, but it does not by itself shorten a run. Shorter tests come from lowering `MAX_WALLCLOCK_SECONDS`.
-- `scripts/run_qtail_1xh100.sh` is intentionally a cheap screen, not a leaderboard-comparable run.
+- `scripts/run_qtail_1xh100.sh` is intentionally a cheap screen, not a leaderboard-comparable run. It defaults `FINAL_SLIDING_EVAL=0` to avoid burning time on the final full sliding pass.
 - `scripts/run_pricebook_eval.sh` expects an existing `final_model.pt` from a previous run and does `ITERATIONS=0`, so it only measures export+eval deltas.
 - For a real submission, save the final `train.log`, exact `train_gpt.py`, and `submission.json` in a new folder under `records/`.

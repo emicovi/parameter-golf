@@ -59,6 +59,7 @@ class Hyperparameters:
     train_seq_len = int(os.environ.get("TRAIN_SEQ_LEN", 1024))
     eval_seq_len = int(os.environ.get("EVAL_SEQ_LEN", 2048))
     eval_stride = int(os.environ.get("EVAL_STRIDE", 0))
+    final_sliding_eval = bool(int(os.environ.get("FINAL_SLIDING_EVAL", "1")))
     max_wallclock_seconds = float(os.environ.get("MAX_WALLCLOCK_SECONDS", 600.0))
     qk_gain_init = float(os.environ.get("QK_GAIN_INIT", 1.5))
 
@@ -1313,7 +1314,7 @@ def main() -> None:
     )
     log0(f"final_int8_zlib_roundtrip_exact val_loss:{q_val_loss:.8f} val_bpb:{q_val_bpb:.8f}")
 
-    if args.eval_stride > 0:
+    if args.eval_stride > 0 and args.final_sliding_eval:
         torch.cuda.synchronize()
         t_slide = time.perf_counter()
         s_val_loss, s_val_bpb = eval_val_sliding(
@@ -1328,6 +1329,8 @@ def main() -> None:
             f"stride:{args.eval_stride} seq_len:{effective_eval_seq_len}"
         )
         log0(f"final_sliding_window_exact val_loss:{s_val_loss:.8f} val_bpb:{s_val_bpb:.8f}")
+    elif args.eval_stride > 0:
+        log0(f"final_sliding_window skipped final_sliding_eval={int(args.final_sliding_eval)} stride:{args.eval_stride}")
 
     if distributed:
         dist.destroy_process_group()
