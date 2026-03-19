@@ -6,8 +6,8 @@ Beat the current public open-PR frontier on Parameter Golf with a submission lin
 
 Current public target to beat:
 
-- `PR #114`
-- `val_bpb = 1.1574`
+- `PR #135`
+- `val_bpb = 1.1539`
 
 Current merged leaderboard top on `upstream/main`:
 
@@ -17,6 +17,11 @@ Current merged leaderboard top on `upstream/main`:
 Current working line:
 
 - `records/track_10min_16mb/2026-03-19_QTailSTE_Int6MLP3x`
+
+Current public frontier references:
+
+- `PR #135` -> `1.1539`
+- `PR #114` -> `1.1574`
 
 Private notes path:
 
@@ -66,7 +71,7 @@ Current best smoke candidate is `QTAIL_START_FRAC=0.75`.
 
 1. Promote `QTAIL_START_FRAC=0.75` with `K2` to the first large-box proxy run on `7xH100`.
 2. Measure the real `post-export val_bpb` under the submission-like contract.
-3. Compare the result against `PR #114 = 1.1574`.
+3. Compare the result against `PR #135 = 1.1539`.
 4. If the gap is still material, choose the next single lever on the critical path.
 5. When `8xH100` becomes available, replay the best candidate under the exact leaderboard contract.
 
