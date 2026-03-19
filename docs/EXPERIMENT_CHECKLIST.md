@@ -9,6 +9,11 @@ Current public target to beat:
 - `PR #114`
 - `val_bpb = 1.1574`
 
+Current merged leaderboard top on `upstream/main`:
+
+- `Muon WD + 10 layer`
+- `val_bpb = 1.1748`
+
 Current working line:
 
 - `records/track_10min_16mb/2026-03-19_QTailSTE_Int6MLP3x`
@@ -26,35 +31,43 @@ Private notes path:
 - [x] `INIT_STATE_PATH` added for export-only sweeps
 - [x] `FINAL_SLIDING_EVAL` added so smoke runs stay cheap
 - [x] First `1xH100` smoke run completed
-- [ ] First `PriceBook` sweep completed
+- [x] First `PriceBook` sweep completed
 - [ ] First `8xH100` full run completed
-- [ ] Best variant selected
+- [x] Best `1xH100` candidate selected
 - [ ] Submission-quality record finalized
+
+## PriceBook Evidence
+
+Export-only sweep from saved `final_model.pt`:
+
+- `K2` -> `val_bpb = 1.42612421`, `total_bytes = 8,677,275`
+- `K1` -> `val_bpb = 1.42637050`, `total_bytes = 8,483,744`
+- `V1` -> `val_bpb = 1.42718133`, `total_bytes = 8,474,011`
+- `O1` -> `val_bpb = 1.42672352`, `total_bytes = 8,677,357`
+
+Current best fp16-island choice stays `K2`.
 
 ## Smoke Evidence
 
-From the first `1xH100` smoke run:
+The `1xH100` smoke runs are directional only. They are not leaderboard-comparable.
 
-- `QTAIL_STE` activated correctly at `progress=0.820`
-- tail activation changed `52` eligible modules
-- pre-tail speed was about `201 ms/step`
-- post-tail speed was about `226 ms/step`
-- compressed model bytes: `8,619,373`
-- total bytes with code: `8,677,016`
-- post-export roundtrip smoke score: `val_bpb = 1.42612364`
+Tail-start sweep results so far:
 
-This smoke result is only a technical gate. It is not leaderboard-comparable.
+- `stock` -> `val_bpb = 1.53177523`, `total_bytes = 8,485,338`
+- `qtail 0.82` -> `val_bpb = 1.42612364`, `total_bytes = 8,677,016`
+- `qtail 0.75` -> `val_bpb = 1.40694623`, `total_bytes = 8,622,024`
+- `qtail 0.70` -> `val_bpb = 1.41162008`, `total_bytes = 8,523,033`
+- `qtail 0.65` -> `val_bpb = 1.41115429`, `total_bytes = 8,620,021`
+
+Current best smoke candidate is `QTAIL_START_FRAC=0.75`.
 
 ## Next Experiments
 
-1. Run export-only `PriceBook` from the saved `final_model.pt`
-2. Compare:
-   - `K1`
-   - `V1`
-   - `O1`
-3. Keep the best fp16-island allocation
-4. Promote the best variant to `8xH100`
-5. Compare against stock `#114` behavior under the same evaluation contract
+1. Promote `QTAIL_START_FRAC=0.75` with `K2` to the first `8xH100` full run.
+2. Measure the real `post-export val_bpb` under the submission-like contract.
+3. Compare the result against `PR #114 = 1.1574`.
+4. If the gap is still material, choose the next single lever on the critical path.
+5. If the gap is narrow enough, run confirmation seeds and prepare a submission-quality record.
 
 ## Commands
 
