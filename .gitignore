@@ -9,3 +9,8 @@ data/docs_selected.jsonl
 .mypy_cache/
 .venv
 logs/
+
+# Private research notes kept locally in the repo but never committed.
+docs/private/
+PRIVATE_STRATEGY*.md
+ANALYSIS_PRIVATE*.md
