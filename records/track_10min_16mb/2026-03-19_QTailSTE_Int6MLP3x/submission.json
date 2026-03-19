@@ -1,0 +1,11 @@
+{
+  "author": "Emanuel Covelli",
+  "github_id": "emicovi",
+  "name": "QTail STE Int6 MLP3x candidate",
+  "blurb": "PR #114 backbone plus tail-only fake int6 quantization with STE on int6-exported weights. Placeholder metadata until the first run lands.",
+  "date": "2026-03-19",
+  "val_loss": 0.0,
+  "val_bpb": 0.0,
+  "bytes_total": 0,
+  "bytes_code": 0
+}

@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Export-only sweep helper. Reuses a dense checkpoint and changes fp16 passthrough
+# allocation without paying for another full training run.
+
+RUN_ID="${RUN_ID:-pricebook_eval}"
+DATA_PATH="${DATA_PATH:-./data/datasets/fineweb10B_sp1024/}"
+TOKENIZER_PATH="${TOKENIZER_PATH:-./data/tokenizers/fineweb_1024_bpe.model}"
+VOCAB_SIZE="${VOCAB_SIZE:-1024}"
+RUN_SCRIPT="${RUN_SCRIPT:-records/track_10min_16mb/2026-03-19_QTailSTE_Int6MLP3x/train_gpt.py}"
+INIT_STATE_PATH="${INIT_STATE_PATH:-./final_model.pt}"
+NPROC_PER_NODE="${NPROC_PER_NODE:-8}"
+EVAL_SEQ_LEN="${EVAL_SEQ_LEN:-2048}"
+EVAL_STRIDE="${EVAL_STRIDE:-256}"
+FP16_TAIL_K_LAYERS="${FP16_TAIL_K_LAYERS:-2}"
+FP16_TAIL_V_LAYERS="${FP16_TAIL_V_LAYERS:-0}"
+FP16_TAIL_O_LAYERS="${FP16_TAIL_O_LAYERS:-0}"
+FP16_EXTRA_WEIGHT_PATTERNS="${FP16_EXTRA_WEIGHT_PATTERNS:-}"
+
+RUN_ID="${RUN_ID}" \
+DATA_PATH="${DATA_PATH}" \
+TOKENIZER_PATH="${TOKENIZER_PATH}" \
+VOCAB_SIZE="${VOCAB_SIZE}" \
+INIT_STATE_PATH="${INIT_STATE_PATH}" \
+ITERATIONS=0 \
+WARMUP_STEPS=0 \
+QTAIL_STE=0 \
+VAL_LOSS_EVERY=0 \
+EVAL_SEQ_LEN="${EVAL_SEQ_LEN}" \
+EVAL_STRIDE="${EVAL_STRIDE}" \
+FP16_TAIL_K_LAYERS="${FP16_TAIL_K_LAYERS}" \
+FP16_TAIL_V_LAYERS="${FP16_TAIL_V_LAYERS}" \
+FP16_TAIL_O_LAYERS="${FP16_TAIL_O_LAYERS}" \
+FP16_EXTRA_WEIGHT_PATTERNS="${FP16_EXTRA_WEIGHT_PATTERNS}" \
+torchrun --standalone --nproc_per_node="${NPROC_PER_NODE}" "${RUN_SCRIPT}"
