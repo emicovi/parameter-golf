@@ -12,5 +12,7 @@ logs/
 
 # Private research notes kept locally in the repo but never committed.
 docs/private/
+docs/STRATEGY.md
+docs/STRATEGY*.md
 PRIVATE_STRATEGY*.md
 ANALYSIS_PRIVATE*.md
