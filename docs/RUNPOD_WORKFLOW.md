@@ -54,8 +54,9 @@ Quick setup on Runpod:
 
 ```bash
 cd /workspace
-bash /workspace/parameter-golf/scripts/runpod_setup.sh
+git clone --branch codex/runpod-setup https://github.com/emicovi/parameter-golf.git parameter-golf
 cd /workspace/parameter-golf
+bash scripts/runpod_setup.sh
 bash scripts/download_fineweb.sh 1
 bash scripts/run_smoke_1xh100.sh
 ```
