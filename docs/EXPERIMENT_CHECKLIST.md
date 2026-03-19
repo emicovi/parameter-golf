@@ -27,6 +27,7 @@ Private notes path:
 
 - [x] Fork + local workflow set up
 - [x] Runpod `1xH100` pod set up
+- [x] Runpod large-box proxy pod set up (`7xH100`, because `8xH100` was unavailable)
 - [x] `QTAIL_STE` implemented on top of the `#114` backbone
 - [x] `INIT_STATE_PATH` added for export-only sweeps
 - [x] `FINAL_SLIDING_EVAL` added so smoke runs stay cheap
@@ -63,11 +64,11 @@ Current best smoke candidate is `QTAIL_START_FRAC=0.75`.
 
 ## Next Experiments
 
-1. Promote `QTAIL_START_FRAC=0.75` with `K2` to the first `8xH100` full run.
+1. Promote `QTAIL_START_FRAC=0.75` with `K2` to the first large-box proxy run on `7xH100`.
 2. Measure the real `post-export val_bpb` under the submission-like contract.
 3. Compare the result against `PR #114 = 1.1574`.
 4. If the gap is still material, choose the next single lever on the critical path.
-5. If the gap is narrow enough, run confirmation seeds and prepare a submission-quality record.
+5. When `8xH100` becomes available, replay the best candidate under the exact leaderboard contract.
 
 ## Commands
 
@@ -89,4 +90,10 @@ Run the current full candidate:
 
 ```bash
 bash scripts/run_qtail_8xh100.sh
+```
+
+Run the current `7xH100` proxy candidate:
+
+```bash
+bash scripts/run_qtail_7xh100.sh
 ```
