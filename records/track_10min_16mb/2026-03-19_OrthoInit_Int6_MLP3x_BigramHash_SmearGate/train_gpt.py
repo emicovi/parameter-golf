@@ -93,8 +93,10 @@ class Hyperparameters:
     grad_clip_norm = float(os.environ.get("GRAD_CLIP_NORM", 0.3))
 
     # QAT: fake int6 quantization with STE during training (matches int6 export)
-    # Disabled by default: 54% step overhead outweighs the quant gap reduction.
+    # Disabled by default: global fake quant adds large step overhead.
     qat_enabled = bool(int(os.environ.get("QAT_ENABLED", "0")))
+    qtail_ste = bool(int(os.environ.get("QTAIL_STE", "0")))
+    qtail_start_frac = float(os.environ.get("QTAIL_START_FRAC", 0.75))
 
     # Sliding window evaluation: stride < seq_len gives overlapping windows for better BPB.
     eval_stride = int(os.environ.get("EVAL_STRIDE", 64))
@@ -709,14 +711,56 @@ class _FakeQuantizeInt6STE(torch.autograd.Function):
 
 fake_quantize_int6_ste = _FakeQuantizeInt6STE.apply
 
+def should_fake_quantize_int6_weight(name: str) -> bool:
+    if any(pattern in name for pattern in CONTROL_TENSOR_NAME_PATTERNS):
+        return False
+    if any(pattern in name for pattern in FP16_KEEP_NAME_PATTERNS):
+        return False
+    return _classify_param(name) in {"mlp", "attn"}
+
 class CastedLinear(nn.Linear):
     qat: bool = False
+    qtail_ste_eligible: bool = False
+    qtail_ste_active: bool = False
     def forward(self, x: Tensor) -> Tensor:
         w = self.weight.to(x.dtype)
-        if self.qat and self.training and w.ndim == 2:
+        use_fake_quant = (
+            self.training
+            and w.ndim == 2
+            and (
+                self.qat
+                or (
+                    getattr(self, "qtail_ste_active", False)
+                    and getattr(self, "qtail_ste_eligible", False)
+                )
+            )
+        )
+        if use_fake_quant:
             w = fake_quantize_int6_ste(w)
         bias = self.bias.to(x.dtype) if self.bias is not None else None
         return F.linear(x, w, bias)
+
+def configure_qtail_ste_modules(module: nn.Module) -> int:
+    eligible_count = 0
+    for name, submodule in module.named_modules():
+        if not isinstance(submodule, CastedLinear):
+            continue
+        weight_name = f"{name}.weight" if name else "weight"
+        eligible = should_fake_quantize_int6_weight(weight_name)
+        submodule.qtail_ste_eligible = eligible
+        submodule.qtail_ste_active = False
+        eligible_count += int(eligible)
+    return eligible_count
+
+def set_qtail_ste_active(module: nn.Module, active: bool) -> int:
+    changed = 0
+    for submodule in module.modules():
+        if not isinstance(submodule, CastedLinear) or not getattr(submodule, "qtail_ste_eligible", False):
+            continue
+        if getattr(submodule, "qtail_ste_active", False) != active:
+            submodule.qtail_ste_active = active
+            changed += 1
+    return changed
 
 
 def restore_low_dim_params_to_fp32(module: nn.Module) -> None:
@@ -1149,8 +1193,14 @@ def main() -> None:
             module.float()
             if args.qat_enabled:
                 module.qat = True
+    qtail_eligible_modules = configure_qtail_ste_modules(base_model)
     restore_low_dim_params_to_fp32(base_model)
     log0(f"QAT:{args.qat_enabled}")
+    if args.qtail_ste:
+        log0(
+            f"qtail_ste:enabled start_frac:{args.qtail_start_frac:.2f} "
+            f"eligible_modules:{qtail_eligible_modules}"
+        )
     compiled_model = torch.compile(base_model, dynamic=False, fullgraph=True)
     model: nn.Module = DDP(compiled_model, device_ids=[local_rank], broadcast_buffers=False) if distributed else compiled_model
 
@@ -1287,6 +1337,7 @@ def main() -> None:
 
     training_time_ms = 0.0
     stop_after_step: int | None = None
+    qtail_live = False
     torch.cuda.synchronize()
     t0 = time.perf_counter()
 
@@ -1327,6 +1378,19 @@ def main() -> None:
 
         elapsed_ms = training_time_ms + 1000.0 * (time.perf_counter() - t0)
         scale = lr_mul(step, elapsed_ms)
+        if args.qtail_ste and not qtail_live:
+            if max_wallclock_ms is not None and max_wallclock_ms > 0:
+                qtail_progress = min(elapsed_ms / max_wallclock_ms, 1.0)
+            else:
+                qtail_progress = step / max(args.iterations, 1)
+            if qtail_progress >= args.qtail_start_frac:
+                changed = set_qtail_ste_active(base_model, True)
+                qtail_live = True
+                log0(
+                    f"qtail_ste:activated step:{step}/{args.iterations} "
+                    f"progress:{qtail_progress:.3f} changed_modules:{changed} "
+                    f"elapsed_ms:{elapsed_ms:.0f}"
+                )
         zero_grad_all()
         train_loss = torch.zeros((), device=device)
         for micro_step in range(grad_accum_steps):
